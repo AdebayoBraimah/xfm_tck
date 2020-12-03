@@ -5,6 +5,9 @@
     * Logging
     * Wrapper class for UNIX command line executables.
 
+Todo:
+    * Add gzipping/gunzipping functions to File class
+
 """
 
 # Import modules/packages
