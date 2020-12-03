@@ -7,6 +7,10 @@
 
 Todo:
     * Add gzipping/gunzipping functions to File class
+        * See these links:
+            * https://stackoverflow.com/questions/8156707/gzip-a-file-in-python
+            * https://github.com/AdebayoBraimah/convert_source/blob/36382a97aca380c69b44083abefe6efba74699da/convert_source/utils.py#L114
+        * Add option to use native gzipping if available
 
 """
 
@@ -99,7 +103,7 @@ class File(object):
             file: File name with no extension.
         '''
         if ext:
-            ext_num = len(ext)
+            ext_num: int = len(ext)
             return self.file[:-(ext_num)]
         elif self.ext:
             ext_num = len(self.ext)
@@ -462,7 +466,7 @@ class Command(object):
             return True
         
     def run(self,
-            log: LogFile,
+            log: LogFile = "",
             debug: bool = False,
             dryrun: bool = False,
             env: dict = {},
@@ -501,14 +505,19 @@ class Command(object):
         # Create command str for log
         cmd: str = ' '.join(self.cmd_list) # Join list for logging purposes
         
-        if debug:
-            log.debug(f"Running: {cmd}")
-        else:
-            log.info(f"Running: {cmd}")
+        if log:
+            if debug:
+                log.debug(f"Running: {cmd}")
+            else:
+                log.info(f"Running: {cmd}")
         
-        if dryrun:
-            log.info("Performing command as dryrun")
-            return 0
+        if log:
+            if dryrun:
+                log.info("Performing command as dryrun")
+                return 0
+            else:
+                print("Performing command as dryrun")
+                return 0
         
         # Define environment variables
         merged_env: dict = os.environ
@@ -538,17 +547,24 @@ class Command(object):
             stderr = None
 
         if p.returncode:
-            log.error(f"command: {cmd} \n Failed with returncode {p.returncode}")
+            if log:
+                log.error(f"command: {cmd} \n Failed with returncode {p.returncode}")
+            else:
+                print(f"command: {cmd} \n Failed with returncode {p.returncode}")
 
         if len(out) > 0:
-            if debug:
-                log.debug(out)
-            else:
-                log.info(out)
+            if log:
+                if debug:
+                    log.debug(out)
+                else:
+                    log.info(out)
 
         if len(err) > 0:
-            if debug:
-                log.info(err)
+            if log:
+                if debug:
+                    log.info(err)
+                else:
+                    log.warning(err)
             else:
-                log.warning(err)
+                print(f"ERROR: {err}")
         return p.returncode,stdout,stderr
