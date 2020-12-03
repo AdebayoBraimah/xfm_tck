@@ -5,12 +5,6 @@
     * Logging
     * Wrapper class for UNIX command line executables.
 
-Todo:
-    * Write examples in doctest format, illustrating how to use functions:
-        * Example:
-            >>> print([i for i in example_generator(4)])
-            [0, 1, 2, 3]
-
 """
 
 # Import modules/packages
