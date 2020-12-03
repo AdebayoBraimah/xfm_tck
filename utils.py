@@ -514,10 +514,7 @@ class Command(object):
         if log:
             if dryrun:
                 log.info("Performing command as dryrun")
-                return 0
-            else:
-                print("Performing command as dryrun")
-                return 0
+                return (0,'','')
         
         # Define environment variables
         merged_env: dict = os.environ
