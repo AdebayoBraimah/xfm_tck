@@ -1,0 +1,19 @@
+02-12-20 20:58:08 utils        INFO     Running: fslinfo /mnt/c/Users/smart/Desktop/IRC317H_NAS/dti/data.dti/sub-C01/ses-001/dwi/bval-b2000_run-01/sub-C01_ses-001_bval-b2000_run-01_dwi.nii.gz
+02-12-20 20:58:08 utils        INFO     data_type	FLOAT32
+dim1		96
+dim2		96
+dim3		84
+dim4		68
+datatype	16
+pixdim1		1.667000
+pixdim2		1.667000
+pixdim3		1.700000
+pixdim4		5.552192
+cal_max		0.000000
+cal_min		0.000000
+file_type	NIFTI-1+
+
+02-12-20 23:46:20 root         ERROR    Invalid alias: The name clear can't be aliased because it is another magic command.
+02-12-20 23:46:20 root         ERROR    Invalid alias: The name more can't be aliased because it is another magic command.
+02-12-20 23:46:20 root         ERROR    Invalid alias: The name less can't be aliased because it is another magic command.
+02-12-20 23:46:20 root         ERROR    Invalid alias: The name man can't be aliased because it is another magic command.
