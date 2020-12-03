@@ -17,3 +17,7 @@ file_type	NIFTI-1+
 02-12-20 23:46:20 root         ERROR    Invalid alias: The name more can't be aliased because it is another magic command.
 02-12-20 23:46:20 root         ERROR    Invalid alias: The name less can't be aliased because it is another magic command.
 02-12-20 23:46:20 root         ERROR    Invalid alias: The name man can't be aliased because it is another magic command.
+03-12-20 01:07:04 root         ERROR    Invalid alias: The name clear can't be aliased because it is another magic command.
+03-12-20 01:07:04 root         ERROR    Invalid alias: The name more can't be aliased because it is another magic command.
+03-12-20 01:07:04 root         ERROR    Invalid alias: The name less can't be aliased because it is another magic command.
+03-12-20 01:07:04 root         ERROR    Invalid alias: The name man can't be aliased because it is another magic command.

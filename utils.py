@@ -20,7 +20,7 @@ import os
 import random
 import shutil
 import platform
-from typing import Optional, Tuple
+from typing import Optional, Union, Tuple
 
 # Define classes
 class DependencyError(Exception):
@@ -37,35 +37,46 @@ class File(object):
     file: str = ""
     
     def __init__(self,
-                 file: str) -> None:
+                 file: str,
+                 ext: str = "") -> None:
         '''Init doc-string for File object class.
         
         Usage example:
-            file_obj = File("<file_name.txt>")
-            file_obj.file -> "<file_name.txt>" # Returns filename str
-        
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.file 
+            "file_name.txt"
+
         Args:
             file: Input file (need not exist at runtime/instantiated).
+            ext: File extension of input file. If no extension is provided, it
+                is inferred.
         '''
         self.file: str = file
+        if ext:
+            self.ext: str = ext
+        elif '.gz' in self.file:
+            self.ext: str = self.file[-(7):]
+        else:
+            self.ext: str = self.file[-(4):]
         
-    def touch(self) -> str:
+    def touch(self) -> None:
         '''Creates empty file.
         
         Usage example:
-            file_obj = File("<file_name.txt>")
-            file_obj.touch()   # Creates empty file
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.touch()   # Creates empty file
         '''
         with open(self.file,'w') as tmp_file:
             pass
-        return self.file
+        return None
     
     def abs_path(self) -> str:
         '''Returns absolute path of file.
         
         Usage example:
-            file_obj = File("<file_name.txt>")
-            file_obj.abs_path()   # Returns abs path of file as str
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.abs_path()
+            "abspath/to/file_namt.txt"
         '''
         if os.path.exists(self.file):
             return os.path.abspath(self.file)
@@ -80,15 +91,9 @@ class File(object):
         '''Removes file extension from the file.
         
         Usage example:
-            # Recommended
-            file_obj = File("<file_name.txt>")
-            file_obj.rm_ext(".txt")
-            
-            # or
-            
-            # Not recommended
-            file_obj = File("<file_name.txt>")
-            file_obj.rm_ext()   # Returns "file_name"
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.rm_ext() 
+            "file_name"
         
         Args:
             ext: File extension.
@@ -99,37 +104,43 @@ class File(object):
         if ext:
             ext_num = len(ext)
             return self.file[:-(ext_num)]
+        elif self.ext:
+            ext_num = len(self.ext)
+            return self.file[:-(ext_num)]
         else:
             return self.file[:-(4)]
         
     def write_txt(self,
-                 txt: str = "") -> str:
+                 txt: str = "") -> None:
         '''Writes/appends text to file.
         
         Usage example:
-            file_obj = File("<file_name.txt>")
-            file_obj.write_txt("<Some text to be written>")
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.write_txt("<Text to be written>")
         
         Args:
             txt: Text to be written to file.
+
         Returns:
             file: File with text written/appended to it.
         '''
         with open(self.file,"a") as tmp_file:
             tmp_file.write(txt)
             tmp_file.close()
-        return self.file
+        return None
 
     def file_parts(self,
                   ext: str = "") -> Tuple[str,str,str]:
-        '''Splits a file into its constituent parts:
+        '''Splits a file and its path into its constituent 
+        parts:
             * file path
             * filename
             * extension
         
         Usage example:
-            file_obj = File("<file_name.txt>")
-            file_obj.file_parts()
+            >>> file_obj = File("file_name.txt")
+            >>> file_obj.file_parts()
+            ("path/to/file", "filename", ".ext")   # .ext = file extension
         
         Args:
             ext: File extension, needed if the file extension of file 
@@ -148,8 +159,13 @@ class File(object):
             [path, _filename] = os.path.splitdrive(file)
         else:
             [path, _filename] = os.path.split(file)
-            
+        
         if ext:
+            ext_num = len(ext)
+            _filename = _filename[:-(ext_num)]
+            [filename, _ext] = os.path.splitext(_filename)
+        elif self.ext:
+            ext = self.ext
             ext_num = len(ext)
             _filename = _filename[:-(ext_num)]
             [filename, _ext] = os.path.splitext(_filename)
@@ -177,8 +193,8 @@ class TmpDir(object):
         '''Init doc-string for TmpDir class.
         
         Usage example:
-            tmp_directory = TmpDir("<temporary_directory>")
-            tmp_directory.tmp_dir()   # Returns temporoary directory path str
+            >>> tmp_directory = TmpDir("/path/to/temporary_directory")
+            >>> tmp_directory.tmp_dir() 
         
         Args:
             tmp_dir: Temporary parent directory name/path.
@@ -198,8 +214,8 @@ class TmpDir(object):
         '''Creates/makes temporary directory.
         
         Usage example:
-            tmp_directory = TmpDir("<temporary_directory>")
-            tmp_directory.mk_tmp_dir()   # Makes temporary_directory
+            >>> tmp_directory = TmpDir("/path/to/temporary_directory")
+            >>> tmp_directory.mk_tmp_dir()
         '''
         if not os.path.exists(self.tmp_dir):
             return os.makedirs(self.tmp_dir)
@@ -211,8 +227,8 @@ class TmpDir(object):
         '''Removes temporary directory.
         
         Usage example:
-            tmp_directory = TmpDir("<temporary_directory>")
-            tmp_directory.rm_tmp_dir()   # Removes temporary directory
+            >>> tmp_directory = TmpDir("/path/to/temporary_directory")
+            >>> tmp_directory.rm_tmp_dir() 
         
         Args:
             rm_parent: Removes parent directory as well.
@@ -230,6 +246,7 @@ class TmpDir(object):
         
         Attributes (class and instance attributes):
             tmp_file (class and instance): Temporary file name.
+            tmp_dir (class and instance): Temporary directory name.
         '''
         
         tmp_file: File = ""
@@ -243,9 +260,10 @@ class TmpDir(object):
             TmpFile also inherits methods from the File class.
             
             Usage example:
-                tmp_directory = TmpDir("<temporary_directory>")
-                temp_file = TmpDir.TmpFile("<temporary_file>", tmp_directory.tmp_dir)
-                temp_file.tmp_file   # Returns temporary filename as str
+                >>> tmp_directory = TmpDir("/path/to/temporary_directory")
+                >>> temp_file = TmpDir.TmpFile("temporary_file", tmp_directory.tmp_dir)
+                >>> temp_file.tmp_file
+                "/path/to/temporary_directory/temporary_file"
             
             Args:
                 tmp_file: Temporary file name.
@@ -268,26 +286,13 @@ class NiiFile(File):
         '''Init doc-string for NiiFile class.
         
         Usage example:
-            nii_file = NiiFile("<file.nii>")
-            nii_file.file   # Returns NIFTI filename as str
+            >>> nii_file = NiiFile("file.nii")
+            >>> nii_file.file 
+            "file.nii"
         '''
         self.file = file
         File.__init__(self,self.file)
-    
-    def rm_ext(self) -> str:
-        '''Removes file extensions of NIFTI files. Intended explicitly
-        for use-cases pertaining to NIFTI files.
-        
-        Usage example:
-            nii_file = NiiFile
-            nii_file.rm_ext()   # Returns NIFTI filename without extension
-        '''
-        if '.nii.gz' in self.file:
-            return self.file[:-7]
-        elif '.nii' in self.file:
-            return self.file[:-4]
-        else:
-            return self.file
+
 
 class LogFile(File):
     '''Class that creates a log file for logging purposes. Due to how this 
@@ -307,8 +312,9 @@ class LogFile(File):
         associated methods.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.file   # Returns log file's filename
+            >>> log = LogFile("file.log")
+            >>> log.file 
+            "file.log"
         
         Args:
             file: Log filename (need not exist at runtime).
@@ -337,8 +343,8 @@ class LogFile(File):
         '''Writes information to log file.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.info("<str>")
+            >>> log = LogFile("file.log")
+            >>> log.info("<str>")
         
         Args:
             msg: String to be printed to log file.
@@ -350,8 +356,8 @@ class LogFile(File):
         '''Writes debug information to file.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.debug("<str>")
+            >>> log = LogFile("file.log")
+            >>> log.debug("<str>")
         
         Args:
             msg: String to be printed to log file.
@@ -363,8 +369,8 @@ class LogFile(File):
         '''Writes error information to file.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.error("<str>")
+            >>> log = LogFile("file.log")
+            >>> log.error("<str>")
         
         Args:
             msg: String to be printed to log file.
@@ -376,8 +382,8 @@ class LogFile(File):
         '''Writes warnings to file.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.warning("<str>")
+            >>> log = LogFile("file.log")
+            >>> log.warning("<str>")
         
         Args:
             msg: String to be printed to log file.
@@ -385,12 +391,12 @@ class LogFile(File):
         self.logger.warning(msg)
     
     def log(self,
-        log_cmd: str = ""):
+        log_cmd: str = "") -> None:
         '''Log function for logging commands and messages to some log file.
         
         Usage examples:
-            log = LogFile("<file.log>")
-            log.log("<log_cmd>")
+            >>> log = LogFile("file.log")
+            >>> log.log("<str>")
             
         Args:
             log_cmd: Message to be written to log file
@@ -415,9 +421,9 @@ class Command(object):
         be appended to).
         
         Usage example:
-            echo = Command("echo")
-            echo.cmd_list.append("Hi!")
-            echo.cmd_list.append("I have arrived!")
+            >>> echo = Command("echo")
+            >>> echo.cmd_list.append("Hi!")
+            >>> echo.cmd_list.append("I have arrived!")
         
         Arguments:
             command: Command to be used. Note: command used must be in system path
@@ -429,15 +435,15 @@ class Command(object):
         self.cmd_list = [f"{self.command}"]
         
     def check_dependency(self,
-                         err_msg: Optional[str] = None) -> None:
+                         err_msg: Optional[str] = None) -> Union[bool,None]:
         '''Checks dependency of some command line executable. Should the 
         dependency not be met, then an exception is raised. Check the 
         system path should problems arise and ensure that the executable
         of interest is installed.
         
         Usage example:
-            figlet = Command("figlet")
-            figlet.check_dependency()   # Raises exception if not in system path
+            >>> figlet = Command("figlet")
+            >>> figlet.check_dependency()   # Raises exception if not in system path
         
         Args:
             err_msg: Error message to print to screen.
@@ -472,13 +478,14 @@ class Command(object):
         NOTE: The contents of the 'stdout' output file will be empty if 'shell' is set to True.
         
         Usage example:
-            # Create command and cmd_list
-            echo = Command("echo")
-            echo.cmd_list.append("Hi!")
-            echo.cmd_list.append("I have arrived!")
+            >>> # Create command and cmd_list
+            >>> echo = Command("echo")
+            >>> echo.cmd_list.append("Hi!")
+            >>> echo.cmd_list.append("I have arrived!")
             
-            # Run/execute command
-            echo.run()
+            >>> # Run/execute command
+            >>> echo.run()
+            (0, '', '')
         
         Args:
             log: LogFile object
