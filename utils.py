@@ -11,6 +11,7 @@ Todo:
             * https://stackoverflow.com/questions/8156707/gzip-a-file-in-python
             * https://github.com/AdebayoBraimah/convert_source/blob/36382a97aca380c69b44083abefe6efba74699da/convert_source/utils.py#L114
         * Add option to use native gzipping if available
+    * Type all initial apprearances of arguments/variables
 
 """
 
