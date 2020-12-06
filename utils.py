@@ -309,7 +309,7 @@ class LogFile(File):
     '''
     
     def __init__(self,
-                 log_file: File = "") -> None:
+                 log_file: str = "") -> None:
         '''Init doc-string for LogFile class. Initiates logging and its 
         associated methods.
         
@@ -321,7 +321,7 @@ class LogFile(File):
         Args:
             file: Log filename (need not exist at runtime).
         '''
-        self.log_file: File = log_file
+        self.log_file: str = log_file
         
         # Set-up logging to file
         logging.basicConfig(level=logging.INFO,
