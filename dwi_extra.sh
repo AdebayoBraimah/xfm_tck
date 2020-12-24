@@ -21,9 +21,10 @@ Usage() {
 
   Usage: $(basename $(realpath ${0})) --wm-fod <wmFOD.mif> --gm <GM.mif> --csf <CSF.mif> --out-vf <VF.mif>
 
-Computes vf (vector field) file provided a white matter fiber orientation 
-distrubution (wmFOD) file and its corresponding grey matter and CSF response
-images. All input and output images are in MIF format (.mif/.mif.gz)
+Computes DEC (directionally-encoded color) and VF (vector field) maps provided 
+a white matter fiber orientation distrubution (wmFOD) file and its corresponding 
+grey matter and CSF response images. All input and output images are to be in 
+MIF format (.mif/.mif.gz).
 
 Required:
 
