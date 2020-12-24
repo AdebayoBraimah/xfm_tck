@@ -11,7 +11,7 @@ This program/script assumes that the input diffusion data has already undergone 
 
 TODO:
     * Write QC functions to generate QC images.
-    * Add verbose options and statements.
+    * Output tck file(s) in main output directory
 
 Adebayo B. Braimah - 23 Dec. 2020
 '''
