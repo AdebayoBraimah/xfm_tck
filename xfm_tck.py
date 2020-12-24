@@ -11,8 +11,8 @@ This program/script assumes that the input diffusion data has already undergone 
 
 TODO:
     * Write QC functions to generate QC images.
-    * Output tck file(s) in main output directory
     * Convert head mif to nii
+        * write general purpose conversion functions
 
 Adebayo B. Braimah - 23 Dec. 2020
 '''
@@ -512,6 +512,69 @@ class ReconMRtrix (object):
         
         mr_convert.run(self.log)
         return mif_file
+
+    def nifti_to_mif(nii: NiiFile,
+                     force: bool = False
+                    ) -> Mif:
+        '''General purpose conversion function for converting 
+        NIFTI-2 image file objects to MIF image file objects.
+
+        Usage example:
+            >>> mif = ReconMRtrix.nifti_to_mif(nii="file.nii.gz")
+            >>>
+            >>> mif.file
+            "file.mif"
+
+        Args:
+            nii: Input NIFTI-2 image file object.
+            force: Force overwrite of existing MIF file.
+
+        Returns:
+            mif: Output MIF image file object.
+        '''
+        [path, filename, _ext] = nii.file_parts()
+
+        mif: str = os.path.join(path,filename + ".mif")
+        mif: Mif = self.Mif(mif)
+
+        mr_convert = Command("mrconvert")
+        if force:
+            mr_convert.cmd_list.append("-force")
+        mr_convert.cmd_list.append(f"{nii.file}")
+        mr_convert.cmd_list.append(f"{mif.file}")
+        mr_convert.run(self.log)
+        return mif
+
+    def mif_to_nifti(mif: Mif,
+                     force: bool = False):
+        '''General purpose conversion function for converting 
+        MIF image file objects to NIFTI-2 image file objects.
+
+        Usage example:
+            >>> nii = ReconMRtrix.mif_to_nifti(mif="file.mif")
+            >>>
+            >>> nii.file
+            "file.nii"
+
+        Args:
+            mif: Input MIF image file object.
+            force: Force overwrite of existing MIF file.
+
+        Returns:
+            nii: Output NIFTI-2 image file object.
+        '''
+        [path, filename, _ext] = self.mif.file_parts()
+
+        nii: str = os.path.join(path,filename + ".nii.gz")
+        nii: NiiFile = NiiFile(nii)
+
+        mr_convert = Command("mrconvert")
+        if force:
+            mr_convert.cmd_list.append("-force")
+        mr_convert.cmd_list.append(f"{mif.file}")
+        mr_convert.cmd_list.append(f"{nii.file}")
+        mr_convert.run(self.log)
+        return nii
     
     def estimate_response(self,
                           mif: Mif,
@@ -1715,8 +1778,8 @@ def create_structural_connectome(dwi: str,
         md_connectome: MD weighted structural connectome file object.
         ad_connectome: AD weighted structural connectome file object.
         rd_connectome: RD weighted structural connectome file object.
-        labels_native: labels_native: Output NIFTI-2 image file object of template labels in subject native space.
-        head: Output NIFTI-2 image file object of template in subject native space.
+        up_labels_native: Output upsampled NIFTI-2 image file object of template labels in subject native space.
+        head: Output upsampled NIFTI-2 image file object of subject's mean B0.
         tcks: Tractography tck File object
         unfilt_tcks: Filtered tck File object, if desired.
         work_tmp: Temporary (working) directory object.
@@ -1772,7 +1835,7 @@ def create_structural_connectome(dwi: str,
     
     # Convert NIFTI file to MIF file
     dwi_miff = mr_diff.dwi_nifti_to_mif(force=force,
-                                   gzip=gzip)
+                                        gzip=gzip)
     
     # Estimate response function(s)
     [wm_res, gm_res, csf_res] = mr_diff.estimate_response(mif=dwi_miff,
@@ -1845,8 +1908,12 @@ def create_structural_connectome(dwi: str,
                                                     rd=rd,
                                                     force=force,
                                                     cleanup=cleanup)
+
+    # Convert output image files to NIFTI
+    up_labels_native: NiiFile = ReconMRtrix.mif_to_nifti(mif=up_labels_native)
+    head: NiiFile = ReconMRtrix.mif_to_nifti(mif=head)
     
-    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, labels_native, head, tcks, unfilt_tcks, work_tmp
+    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, up_labels_native, head, tcks, unfilt_tcks, work_tmp
 
 if __name__ == "__main__":
     main()
