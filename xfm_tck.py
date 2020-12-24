@@ -12,6 +12,7 @@ This program/script assumes that the input diffusion data has already undergone 
 TODO:
     * Write QC functions to generate QC images.
     * Output tck file(s) in main output directory
+    * Convert head mif to nii
 
 Adebayo B. Braimah - 23 Dec. 2020
 '''
@@ -273,13 +274,15 @@ def main() -> None:
 
     os.chdir(args.out_dir)
 
-    [connectome, \
-    fa_connectome, \
-    md_connectome, \
-    ad_connectome, \
-    rd_connectome, \
-    labels_native, \
+    [connectome,
+    fa_connectome,
+    md_connectome,
+    ad_connectome,
+    rd_connectome,
+    labels_native,
     head,
+    tcks, 
+    unfilt_tcks,
     work_tmp] = create_structural_connectome(dwi=args.dwi,
                                              bval=args.bval,
                                              bvec=args.bvec,
@@ -469,10 +472,10 @@ class ReconMRtrix (object):
                     self.file = self.file[:-(4)] + ".mif"
             File.__init__(self,self.file,self.ext)
     
-    def nifti_to_mif(self,
-                     force: bool = False,
-                     gzip: bool = False
-                    ) -> Mif:
+    def dwi_nifti_to_mif(self,
+                         force: bool = False,
+                         gzip: bool = False
+                        ) -> Mif:
         '''Converts DWI NIFTI file and its associated files to MIF files.
         
         Usage example:
@@ -481,7 +484,7 @@ class ReconMRtrix (object):
             >>>                       "file.bvec",
             >>>                       "file.json",
             >>>                       "file.log")
-            >>> dwi_mif = dwi_obj.nifti_to_mif()
+            >>> dwi_mif = dwi_obj.dwi_nifti_to_mif()
             >>> dwi_mif.file
             'file.mif'
         
@@ -527,7 +530,7 @@ class ReconMRtrix (object):
             >>>                       "file.bvec",
             >>>                       "file.json",
             >>>                       "file.log")
-            >>> dwi_mif = dwi_obj.nifti_to_mif()
+            >>> dwi_mif = dwi_obj.dwi_nifti_to_mif()
             >>>
             >>> [wm, gm, csf] = dwi_obj.estimate_response(mif=dwi_mif)
 
@@ -582,7 +585,7 @@ class ReconMRtrix (object):
             >>>                       "file.bvec",
             >>>                       "file.json",
             >>>                       "file.log")
-            >>> dwi_mif = dwi_obj.nifti_to_mif()
+            >>> dwi_mif = dwi_obj.dwi_nifti_to_mif()
             >>>
             >>> new_mif = dwi_obj.mr_upsample(mif=dwi_mif,
             >>>                               vox=1.5,
@@ -666,7 +669,7 @@ class ReconMRtrix (object):
             >>>                       "file.bvec",
             >>>                       "file.json",
             >>>                       "file.log")
-            >>> dwi_mif = dwi_obj.nifti_to_mif()
+            >>> dwi_mif = dwi_obj.dwi_nifti_to_mif()
             >>>
             >>> [mask_mif,brain_mif,head_mif] = dwi_obj.create_mask(mif=dwi_mif,
             >>>                                                     frac_int=0.5)
@@ -782,7 +785,7 @@ class ReconMRtrix (object):
             >>>                       "file.bvec",
             >>>                       "file.json",
             >>>                       "file.log")
-            >>> dwi_mif = dwi_obj.nifti_to_mif()
+            >>> dwi_mif = dwi_obj.dwi_nifti_to_mif()
             >>>
             >>> [wm, gm, csf] = dwi_obj.estimate_response(mif=dwi_mif)
             >>>
@@ -1389,7 +1392,7 @@ class DWIxfm(object):
                          self.dwi_json.file,
                          self.log)
         
-        mif_file = dwi.nifti_to_mif()
+        mif_file = dwi.dwi_nifti_to_mif()
         
         [mask_mif,brain_mif,head_mif] = dwi.create_mask(mif_file,frac_int)
         
@@ -1672,7 +1675,7 @@ def create_structural_connectome(dwi: str,
                                  ad: bool = True,
                                  rd: bool = True,
                                  cleanup: bool = True
-                                ) -> Tuple[File,File,File,File,File,NiiFile,NiiFile,TmpDir]:
+                                ) -> Tuple[File,File,File,File,File,NiiFile,NiiFile,File,File,TmpDir]:
     '''Constructs a structural connectome given a DWI file, and a set of an integer labeled atlas.
 
     Args:
@@ -1714,6 +1717,8 @@ def create_structural_connectome(dwi: str,
         rd_connectome: RD weighted structural connectome file object.
         labels_native: labels_native: Output NIFTI-2 image file object of template labels in subject native space.
         head: Output NIFTI-2 image file object of template in subject native space.
+        tcks: Tractography tck File object
+        unfilt_tcks: Filtered tck File object, if desired.
         work_tmp: Temporary (working) directory object.
     
     TODO:
@@ -1766,7 +1771,7 @@ def create_structural_connectome(dwi: str,
                           log=log)
     
     # Convert NIFTI file to MIF file
-    dwi_miff = mr_diff.nifti_to_mif(force=force,
+    dwi_miff = mr_diff.dwi_nifti_to_mif(force=force,
                                    gzip=gzip)
     
     # Estimate response function(s)
@@ -1809,11 +1814,11 @@ def create_structural_connectome(dwi: str,
     
     # Reconstruct Fiber tracts
     if filter_tracts:
-        tmp_tcks = mr_diff.mr_tck_global(wm_fod=wm_fod_norm,
+        unfilt_tcks = mr_diff.mr_tck_global(wm_fod=wm_fod_norm,
                                          mask=mask,
                                          stream_lines=stream_lines,
                                          cutoff=cutoff)
-        tcks = mr_diff.mr_tck_sift(tck=tmp_tcks,
+        tcks = mr_diff.mr_tck_sift(tck=unfilt_tcks,
                                    wm_fod=wm_fod_norm,
                                    term=term,
                                    mask=mask)
@@ -1824,10 +1829,10 @@ def create_structural_connectome(dwi: str,
                                      cutoff=cutoff)
     
     # Compute structural connectome
-    [connectome, \
-     fa_connectome, \
-     md_connectome, \
-     ad_connectome, \
+    [connectome,
+     fa_connectome,
+     md_connectome,
+     ad_connectome,
      rd_connectome] = mr_diff.structural_connectome(tck=tcks,
                                                     labels=up_labels_native,
                                                     dwi=up_dwi_mif,
@@ -1841,7 +1846,7 @@ def create_structural_connectome(dwi: str,
                                                     force=force,
                                                     cleanup=cleanup)
     
-    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, labels_native, head, work_tmp
+    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, labels_native, head, tcks, unfilt_tcks, work_tmp
 
 if __name__ == "__main__":
     main()
