@@ -9,6 +9,10 @@ FSL: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki
 
 This program/script assumes that the input diffusion data has already undergone initial pre-processing.
 
+TODO:
+    * Write QC functions to generate QC images.
+    * Add verbose options and statements.
+
 Adebayo B. Braimah - 23 Dec. 2020
 '''
 
@@ -46,7 +50,7 @@ def main() -> None:
         print("")
         MRtrixError("The required software (MRtrix, SS3T-beta) is not installed or on the system path.")
 
-    parser = argparse.ArgumentParser(description="Constructs a structural connectome given a diffusion weighted image file, and an integer labeled atlas. ")
+    parser = argparse.ArgumentParser(description="Constructs a structural connectome given a diffusion weighted image file, and an integer labeled atlas. NOTE: absolute paths must be passed as arguments.")
 
     # Parse Arguments
     # Required Arguments
@@ -110,13 +114,13 @@ def main() -> None:
                             default="file.log",
                             required=False,
                             help="Log file output filename.")
-    optoptions.add_argument('-w', '--work-dir',
-                            type=str,
-                            dest="work_dir",
-                            metavar="</path/to/work_dir>",
-                            default=None,
-                            required=False,
-                            help="Working directory path [default: 'work.tmp' directory in current working directory].")
+    # optoptions.add_argument('-w', '--work-dir',
+    #                         type=str,
+    #                         dest="work_dir",
+    #                         metavar="</path/to/work_dir>",
+    #                         default=None,
+    #                         required=False,
+    #                         help="Working directory path [default: 'work.tmp' directory in current working directory].")
     optoptions.add_argument('--cwd',
                             action="store_true",
                             dest="cwd",
@@ -265,12 +269,9 @@ def main() -> None:
         os.makedirs(args.out_dir)
 
     # Construct working directory path
-    if args.work_dir:
-        work_tmp_dir = os.path.join(args.out_dir,"work.tmp")
-    else:
-        work_tmp_dir = None
+    work_tmp_dir = os.path.join(args.out_dir,"work.tmp")
 
-    os.chdirs(args.out_dir)
+    os.chdir(args.out_dir)
 
     [connectome, \
     fa_connectome, \
@@ -278,64 +279,68 @@ def main() -> None:
     ad_connectome, \
     rd_connectome, \
     labels_native, \
-    head] = create_structural_connectome(dwi=args.dwi,
-                                     bval=args.bval,
-                                     bvec=args.bvec,
-                                     template=args.template,
-                                     template_brain=args.template_brain,
-                                     labels=args.labels,
-                                     json=args.json,
-                                     log=args.log,
-                                     work_dir=work_tmp_dir,
-                                     use_cwd=args.cwd,
-                                     force=args.force,
-                                     gzip=args.gzip,
-                                     erode=args.erode,
-                                     fa_thresh=args.fa_thresh,
-                                     vox=args.vox,
-                                     dof=args.dof,
-                                     frac_int=args.frac_int,
-                                     stream_lines=args.stream_lines,
-                                     cutoff=args.cutoff,
-                                     filter_tracts=args.filter_tracts,
-                                     term=args.term,
-                                     symmetric=args.symmetric,
-                                     zero_diagonal=args.zero_diagonal,
-                                     fa=args.fa,
-                                     md=args.md,
-                                     ad=args.ad,
-                                     rd=args.rd,
-                                     cleanup=cleanup)
+    head,
+    work_tmp] = create_structural_connectome(dwi=args.dwi,
+                                             bval=args.bval,
+                                             bvec=args.bvec,
+                                             template=args.template,
+                                             template_brain=args.template_brain,
+                                             labels=args.labels,
+                                             json=args.json,
+                                             log=args.log,
+                                             work_dir=work_tmp_dir,
+                                             use_cwd=args.cwd,
+                                             force=args.force,
+                                             gzip=args.gzip,
+                                             erode=args.erode,
+                                             fa_thresh=args.fa_thresh,
+                                             vox=args.vox,
+                                             dof=args.dof,
+                                             frac_int=args.frac_int,
+                                             stream_lines=args.stream_lines,
+                                             cutoff=args.cutoff,
+                                             filter_tracts=args.filter_tracts,
+                                             term=args.term,
+                                             symmetric=args.symmetric,
+                                             zero_diagonal=args.zero_diagonal,
+                                             fa=args.fa,
+                                             md=args.md,
+                                             ad=args.ad,
+                                             rd=args.rd,
+                                             cleanup=cleanup)
 
     # Copy files to output directories
-    out_con = os.path.join(args.out_dir, os.path.basename(connectome.flie))
-    out_labels = os.path.join(args.out_dir, os.path.basename(labels_native.flie))
-    out_head = os.path.join(args.out_dir, os.path.basename(head.flie))
+    out_con = os.path.join(args.out_dir, os.path.basename(connectome.file))
+    out_labels = os.path.join(args.out_dir, os.path.basename(labels_native.file))
+    out_head = os.path.join(args.out_dir, os.path.basename(head.file))
     
     copy(connectome.file,out_con)
     copy(labels_native.file,out_labels)
     copy(head.file,out_head)
 
     if os.path.exists(fa_connectome.file):
-        out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.flie))
+        out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.file))
         copy(fa_connectome.file,out_con_fa)
 
     if os.path.exists(md_connectome.file):
-        out_con_md = os.path.join(args.out_dir, os.path.basename(md_connectome.flie))
+        out_con_md = os.path.join(args.out_dir, os.path.basename(md_connectome.file))
         copy(md_connectome.file,out_con_md)
 
     if os.path.exists(ad_connectome.file):
-        out_con_ad = os.path.join(args.out_dir, os.path.basename(ad_connectome.flie))
+        out_con_ad = os.path.join(args.out_dir, os.path.basename(ad_connectome.file))
         copy(ad_connectome.file,out_con_ad)
 
     if os.path.exists(rd_connectome.file):
-        out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.flie))
+        out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
         copy(rd_connectome.file,out_con_rd)
+
+    if cleanup:
+        work_tmp.rm_tmp_dir(rm_parent=True)
 
     return None
 
 # Scripts directory
-scripts_dir = os.path.realpath(__file__)
+scripts_dir = os.path.dirname(os.path.realpath(__file__))
 
 # Class exceptions
 class MRtrixError(Exception):
@@ -1667,7 +1672,7 @@ def create_structural_connectome(dwi: str,
                                  ad: bool = True,
                                  rd: bool = True,
                                  cleanup: bool = True
-                                ) -> Tuple[File,File,File,File,File,NiiFile,NiiFile]:
+                                ) -> Tuple[File,File,File,File,File,NiiFile,NiiFile,TmpDir]:
     '''Constructs a structural connectome given a DWI file, and a set of an integer labeled atlas.
 
     Args:
@@ -1709,6 +1714,7 @@ def create_structural_connectome(dwi: str,
         rd_connectome: RD weighted structural connectome file object.
         labels_native: labels_native: Output NIFTI-2 image file object of template labels in subject native space.
         head: Output NIFTI-2 image file object of template in subject native space.
+        work_tmp: Temporary (working) directory object.
     
     TODO:
         * Implement functions to create QC images for tracks and iamge transforms.
@@ -1835,7 +1841,7 @@ def create_structural_connectome(dwi: str,
                                                     force=force,
                                                     cleanup=cleanup)
     
-    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, labels_native, head
+    return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, labels_native, head, work_tmp
 
 if __name__ == "__main__":
     main()
