@@ -59,7 +59,7 @@ def main() -> None:
     reqoptions.add_argument('-d', '--dwi',
                             type=str,
                             dest="dwi",
-                            metavar="<DWI.nii.gz>",
+                            metavar="<DWI.nii>",
                             required=True,
                             help="Input preprocessed NIFTI-2 diffusion weighted image file.")
     reqoptions.add_argument('-b', '--bval',
@@ -179,6 +179,12 @@ def main() -> None:
                             default=0.5,
                             required=False,
                             help="Fractional intensity threshold. Smaller values give larger brain outline estimates. [default: 0.5].")
+    pipeoptions.add_argument('--QIT',
+                            action="store_true",
+                            dest="qit",
+                            default=False,
+                            required=False,
+                            help="Rename output track (.tck) files so that they can be opened in QIT [default: False].")
 
     # Tractography specific arguments
     tractoptions = parser.add_argument_group('Tractography specific arguments')
@@ -316,10 +322,16 @@ def main() -> None:
     out_con = os.path.join(args.out_dir, os.path.basename(connectome.file))
     out_labels = os.path.join(args.out_dir, os.path.basename(labels_native.file))
     out_head = os.path.join(args.out_dir, os.path.basename(head.file))
+
+    if args.qit:
+        out_tcks = rename_tck(tcks=tcks)
+    else:
+        out_tcks = os.path.join(args.out_dir, os.path.basename(tcks.file))
     
     copy(connectome.file,out_con)
     copy(labels_native.file,out_labels)
     copy(head.file,out_head)
+    copy(tcks.file,out_tcks)
 
     if os.path.exists(fa_connectome.file):
         out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.file))
@@ -337,7 +349,17 @@ def main() -> None:
         out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
         copy(rd_connectome.file,out_con_rd)
 
+    if os.path.exists(unfilt_tcks.file):
+        out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
+        copy(unfilt_tcks,out_unfilt)
+
     # Create QC images for label transform
+    # 1. Create File objects
+    # NOTE: variables are type hinted due to uncommon datatype
+    out_head: NiiFile = NiiFile(out_head)
+    out_labels: NiiFile = NiiFile(out_labels)
+
+    # 2. Create QC images
     qc_1 = xfm_qc_fig(bg=out_head,overlay=out_labels,outline=False)
     qc_2 = xfm_qc_fig(bg=out_head,overlay=out_labels,outline=True)
 
@@ -2010,6 +2032,45 @@ def xfm_qc_fig(bg: NiiFile,
             render.cmd_list.append("--outline")
         render.run()
         return out
+
+def rename_tck(tcks: File) -> str:
+    '''Very specific function for renaming output tck files 
+    by removing any substring that contains bval and is
+    surrounded by underscores ("_").
+    QIT (http://cabeen.io/qitwiki/index.php?title=About_QIT) 
+    will look for bvec files, should the keyword bval be in 
+    the filename.
+
+    Args:
+        tcks: Input tck file object.
+
+    Returns:
+        out: Output tck file path.
+    '''
+    import re
+
+    [path, filename, ext] = tcks.file_parts()
+
+    s = filename
+
+    s.split("_")
+    s_edit = s.split("_")
+
+    r = re.compile(".*bval")
+    n = list(filter(r.match, s_edit))
+
+    for i in n:
+        s_edit.remove(i)
+
+    f = "_"
+    f = f.join(s_edit)
+
+    filename = f
+
+    out: str = os.path.join(path,filename + ".streamlines" + ext) # ad hoc fix
+    # out: File = File(out)
+
+    return out
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# Test script
+# 
+# Intended for testing the xfm_tck.py script
+# with local data from a neonatal DWI scan 
+# acquisition.
+
 # Export MRtrix path
 scripts_dir=/mnt/c/Users/smart/Desktop/IRC317H_NAS/dti/data.dti
 
