@@ -9,10 +9,10 @@ FSL: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki
 
 This program/script assumes that the input diffusion data has already undergone initial pre-processing.
 
+version 0.0.1
+
 TODO:
     * Write QC functions to generate QC images.
-    * Convert head mif to nii
-        * write general purpose conversion functions
 
 Adebayo B. Braimah - 23 Dec. 2020
 '''
@@ -336,6 +336,10 @@ def main() -> None:
     if os.path.exists(rd_connectome.file):
         out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
         copy(rd_connectome.file,out_con_rd)
+
+    # Create QC images for label transform
+    qc_1 = xfm_qc_fig(bg=out_head,overlay=out_labels,outline=False)
+    qc_2 = xfm_qc_fig(bg=out_head,overlay=out_labels,outline=True)
 
     if cleanup:
         work_tmp.rm_tmp_dir(rm_parent=True)
@@ -664,6 +668,10 @@ class ReconMRtrix (object):
 
         Returns:
             upsampled_mif: Upsampled image MIF file object.
+
+        Raises:
+            DependencyError: Occurs when the external software dependency is
+                not met.
         '''
         # [path, filename, _ext] = self.nii_file.file_parts()
         # [_path, _filename, ext] = mif.file_parts() # Keep original file extension
@@ -1239,6 +1247,9 @@ class ReconMRtrix (object):
             md_connectome: MD weighted structural connectome file object.
             ad_connectome: AD weighted structural connectome file object.
             rd_connectome: RD weighted structural connectome file object.
+
+        Raises:
+            MRtrixError: MRtrix input was not satisfied.
         '''
         [path, filename, _ext] = self.nii_file.file_parts()
         
@@ -1499,6 +1510,9 @@ class DWIxfm(object):
         Returns:
             xfm_mat: Output linear transormation matrix file object.
             xfm_out: Output linearly transormed NIFTI-2 image file object.
+
+        Raises:
+            FSLError: Input to FSL binary was not satisfied.
         '''
         [path, filename, ext] = self.dwi_file.file_parts()
         
@@ -1541,6 +1555,9 @@ class DWIxfm(object):
             nl_out: Output non-linearly transormed (stanard -> native) NIFTI-2 image file object.
             nl_warp: Corresponding non-linear warp field, stored as NIFTI-2 image file object.
             nl_wpcf: Corresponding non-linear warp field coefficients, stored as NIFTI-2 image file object.
+
+        Raises:
+            FSLError: Input to FSL binary (or binaries) was not satisfied.
         '''
         [path, filename, ext] = self.dwi_file.file_parts()
         
@@ -1592,6 +1609,9 @@ class DWIxfm(object):
 
         Returns:
             out: Output non-linearly transormed (stanard -> native) labels NIFTI-2 image file object.
+
+        Raises:
+            FSLError: Input to FSL binary was not satisfied.
         '''
         [path, filename, ext] = self.dwi_file.file_parts()
         
@@ -1783,7 +1803,7 @@ def create_structural_connectome(dwi: str,
         up_labels_native: Output upsampled NIFTI-2 image file object of template labels in subject native space.
         head: Output upsampled NIFTI-2 image file object of subject's mean B0.
         tcks: Tractography tck File object
-        unfilt_tcks: Filtered tck File object, if desired.
+        unfilt_tcks: Filtered tck File object, if desired. Returns as None type otherwise.
         work_tmp: Temporary (working) directory object.
     
     TODO:
@@ -1888,6 +1908,7 @@ def create_structural_connectome(dwi: str,
                                    term=term,
                                    mask=mask)
     else:
+        unfilt_tcks = None
         tcks = mr_diff.mr_tck_global(wm_fod=wm_fod_norm,
                                      mask=mask,
                                      stream_lines=stream_lines,
@@ -1916,6 +1937,79 @@ def create_structural_connectome(dwi: str,
     head: NiiFile = mr_diff.mif_to_nifti(mif=head)
     
     return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, up_labels_native, head, tcks, unfilt_tcks, work_tmp
+
+def xfm_qc_fig(bg: NiiFile,
+            overlay: NiiFile,
+            outline: bool = False
+            ) -> File:
+    '''Creates a QC image overlay of labels assumed to be in subject's native space.
+
+    NOTE: This is a wrapper function for FSLeye's render binary.
+        Example command for fsleyes render on UNIX command line:
+        >>> [fsleyes] render -of <out.png> -hc --scene=ortho \
+        >>> <bg.nii.gz> \
+        >>> <overlay.nii.gz> \
+        >>> -ot label --lut=mgh-cma-freesurfer --outline
+
+    Example Usage:
+        >>> out_file = xfm_qc_fig(bg=bg.nii.gz,
+        >>>                       overlay=labels.nii.gz)
+
+    Args:
+        bg: Input NIFTI-2 image file object that serves as the background image.
+        overlay: Input NIFTI-2 image file object that is meant to be overlayed 
+            on background image.
+        outline: Whether label ROIs should have outlines, rather than a solid color.
+
+    Returns:
+        out: Output is a PNG file object.
+
+    Raises:
+        DependencyError: Exception raised when either set of FSL external dependencies
+            are not met.
+    '''
+    [path, filename, ext] = overlay.file_parts()
+
+    if outline:
+        out: str = os.path.join(path,filename + ".overlay.outline.png")
+    else:
+        out: str = os.path.join(path,filename + ".overlay.png")
+    
+    out: File = File(out)
+
+    try:
+        render = Command("render")
+        render.check_dependency()
+        render.cmd_list.append("-of")
+        render.cmd_list.append(f"{out.abs_path()}")
+        render.cmd_list.append("-hc")
+        render.cmd_list.append("--scene=ortho")
+        render.cmd_list.append(bg.abs_path())
+        render.cmd_list.append(overlay.abs_path())
+        render.cmd_list.append("-ot")
+        render.cmd_list.append("label")
+        render.cmd_list.append("--lut=mgh-cma-freesurfer")
+        if outline:
+            render.cmd_list.append("--outline")
+        render.run()
+        return out
+    except DependencyError:
+        render = Command("fsleyes")
+        render.cmd_list.append("render")
+        render.check_dependency()
+        render.cmd_list.append("-of")
+        render.cmd_list.append(f"{out.abs_path()}")
+        render.cmd_list.append("-hc")
+        render.cmd_list.append("--scene=ortho")
+        render.cmd_list.append(bg.abs_path())
+        render.cmd_list.append(overlay.abs_path())
+        render.cmd_list.append("-ot")
+        render.cmd_list.append("label")
+        render.cmd_list.append("--lut=mgh-cma-freesurfer")
+        if outline:
+            render.cmd_list.append("--outline")
+        render.run()
+        return out
 
 if __name__ == "__main__":
     main()
