@@ -349,9 +349,15 @@ def main() -> None:
         out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
         copy(rd_connectome.file,out_con_rd)
 
-    if os.path.exists(unfilt_tcks.file):
-        out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
-        copy(unfilt_tcks,out_unfilt)
+    try:
+        if os.path.exists(unfilt_tcks.file):
+            out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
+            copy(unfilt_tcks,out_unfilt)
+    except AttributeError:
+        # AttributeError occurs in the case no filtering ocurred.
+        # In this instance NoneType is returned rather than 
+        # FileType object.
+        pass
 
     # Create QC images for label transform
     # 1. Create File objects

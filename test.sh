@@ -39,7 +39,9 @@ log=${out_dir}/sub-C01-bval-b2000.log
 -o ${out_dir} \
 --log ${log} \
 --FA --MD --AD --RD \
---no-cleanup
+--no-cleanup \
+--zero-diagonal \
+--QIT
 
 # Clear python cache
 rm -rf __pycache__
