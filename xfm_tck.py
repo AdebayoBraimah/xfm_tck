@@ -129,7 +129,7 @@ def main() -> None:
                             required=False,
                             help="Use current working directory as parent to working directory [default: False].")
     optoptions.add_argument('--no-cleanup',
-                            action="store_false",
+                            action="store_true",
                             dest="no_cleanup",
                             default=False,
                             required=False,
@@ -325,6 +325,7 @@ def main() -> None:
 
     if args.qit:
         out_tcks = rename_tck(tcks=tcks)
+        out_tcks = os.path.join(args.out_dir, os.path.basename(out_tcks))
     else:
         out_tcks = os.path.join(args.out_dir, os.path.basename(tcks.file))
     
@@ -333,31 +334,45 @@ def main() -> None:
     copy(head.file,out_head)
     copy(tcks.file,out_tcks)
 
-    if os.path.exists(fa_connectome.file):
-        out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.file))
-        copy(fa_connectome.file,out_con_fa)
+    in_files = [fa_connectome, md_connectome, ad_connectome, rd_connectome, unfilt_tcks]
 
-    if os.path.exists(md_connectome.file):
-        out_con_md = os.path.join(args.out_dir, os.path.basename(md_connectome.file))
-        copy(md_connectome.file,out_con_md)
+    for in_file in in_files:
+        try:
+            if os.path.exists(in_file.file):
+                out_file: str = os.path.join(args.out_dir, os.path.basename(in_file.file))
+                copy(in_file.file, out_file)
+        except AttributeError:
+            # AttributeError occurs in the case some options 
+            # were not selected.
+            # In this instance NoneType is returned rather than 
+            # some FileType object.
+            pass
 
-    if os.path.exists(ad_connectome.file):
-        out_con_ad = os.path.join(args.out_dir, os.path.basename(ad_connectome.file))
-        copy(ad_connectome.file,out_con_ad)
+    # if os.path.exists(fa_connectome.file):
+    #     out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.file))
+    #     copy(fa_connectome.file,out_con_fa)
 
-    if os.path.exists(rd_connectome.file):
-        out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
-        copy(rd_connectome.file,out_con_rd)
+    # if os.path.exists(md_connectome.file):
+    #     out_con_md = os.path.join(args.out_dir, os.path.basename(md_connectome.file))
+    #     copy(md_connectome.file,out_con_md)
 
-    try:
-        if os.path.exists(unfilt_tcks.file):
-            out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
-            copy(unfilt_tcks,out_unfilt)
-    except AttributeError:
-        # AttributeError occurs in the case no filtering ocurred.
-        # In this instance NoneType is returned rather than 
-        # FileType object.
-        pass
+    # if os.path.exists(ad_connectome.file):
+    #     out_con_ad = os.path.join(args.out_dir, os.path.basename(ad_connectome.file))
+    #     copy(ad_connectome.file,out_con_ad)
+
+    # if os.path.exists(rd_connectome.file):
+    #     out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
+    #     copy(rd_connectome.file,out_con_rd)
+
+    # try:
+    #     if os.path.exists(unfilt_tcks.file):
+    #         out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
+    #         copy(unfilt_tcks,out_unfilt)
+    # except AttributeError:
+    #     # AttributeError occurs in the case no filtering ocurred.
+    #     # In this instance NoneType is returned rather than 
+    #     # FileType object.
+    #     pass
 
     # Create QC images for label transform
     # 1. Create File objects
