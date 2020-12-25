@@ -513,7 +513,8 @@ class ReconMRtrix (object):
         mr_convert.run(self.log)
         return mif_file
 
-    def nifti_to_mif(nii: NiiFile,
+    def nifti_to_mif(self,
+                     nii: NiiFile,
                      force: bool = False
                     ) -> Mif:
         '''General purpose conversion function for converting 
@@ -545,7 +546,8 @@ class ReconMRtrix (object):
         mr_convert.run(self.log)
         return mif
 
-    def mif_to_nifti(mif: Mif,
+    def mif_to_nifti(self,
+                     mif: Mif,
                      force: bool = False):
         '''General purpose conversion function for converting 
         MIF image file objects to NIFTI-2 image file objects.
@@ -563,7 +565,7 @@ class ReconMRtrix (object):
         Returns:
             nii: Output NIFTI-2 image file object.
         '''
-        [path, filename, _ext] = self.mif.file_parts()
+        [path, filename, _ext] = mif.file_parts()
 
         nii: str = os.path.join(path,filename + ".nii.gz")
         nii: NiiFile = NiiFile(nii)
@@ -693,18 +695,6 @@ class ReconMRtrix (object):
         upsampled_mif: Mif = self.Mif(upsampled_mif,gzip=gzip)
         
         try:
-            upsample = Command("mrresize")
-            upsample.check_dependency()
-            upsample.cmd_list.append(mif.file)
-            upsample.cmd_list.append("-vox")
-            upsample.cmd_list.append(f"{vox}")
-            upsample.cmd_list.append(upsampled_mif.file)
-            if interp:
-                upsample.cmd_list.append("-interp")
-                upsample.cmd_list.append(interp)
-            upsample.run(self.log)
-            return upsampled_mif
-        except DependencyError:
             upsample = Command("mrgrid")
             upsample.check_dependency()
             upsample.cmd_list.append(mif.file)
@@ -712,6 +702,18 @@ class ReconMRtrix (object):
             upsample.cmd_list.append(upsampled_mif.file)
             upsample.cmd_list.append("-voxel")
             upsample.cmd_list.append(f"{vox}")
+            if interp:
+                upsample.cmd_list.append("-interp")
+                upsample.cmd_list.append(interp)
+            upsample.run(self.log)
+            return upsampled_mif
+        except DependencyError:
+            upsample = Command("mrresize")
+            upsample.check_dependency()
+            upsample.cmd_list.append(mif.file)
+            upsample.cmd_list.append("-vox")
+            upsample.cmd_list.append(f"{vox}")
+            upsample.cmd_list.append(upsampled_mif.file)
             if interp:
                 upsample.cmd_list.append("-interp")
                 upsample.cmd_list.append(interp)
@@ -1910,8 +1912,8 @@ def create_structural_connectome(dwi: str,
                                                     cleanup=cleanup)
 
     # Convert output image files to NIFTI
-    up_labels_native: NiiFile = ReconMRtrix.mif_to_nifti(mif=up_labels_native)
-    head: NiiFile = ReconMRtrix.mif_to_nifti(mif=head)
+    up_labels_native: NiiFile = mr_diff.mif_to_nifti(mif=up_labels_native)
+    head: NiiFile = mr_diff.mif_to_nifti(mif=head)
     
     return connectome, fa_connectome, md_connectome, ad_connectome, rd_connectome, up_labels_native, head, tcks, unfilt_tcks, work_tmp
 
