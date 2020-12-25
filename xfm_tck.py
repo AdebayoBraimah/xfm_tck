@@ -11,10 +11,7 @@ This program/script assumes that the input diffusion data has already undergone 
 
 version 0.0.1
 
-TODO:
-    * Write QC functions to generate QC images.
-
-Adebayo B. Braimah - 23 Dec. 2020
+Adebayo B. Braimah - 25 Dec. 2020
 '''
 
 # Import modules/packages
@@ -115,13 +112,6 @@ def main() -> None:
                             default="file.log",
                             required=False,
                             help="Log file output filename.")
-    # optoptions.add_argument('-w', '--work-dir',
-    #                         type=str,
-    #                         dest="work_dir",
-    #                         metavar="</path/to/work_dir>",
-    #                         default=None,
-    #                         required=False,
-    #                         help="Working directory path [default: 'work.tmp' directory in current working directory].")
     optoptions.add_argument('--cwd',
                             action="store_true",
                             dest="cwd",
@@ -347,32 +337,6 @@ def main() -> None:
             # In this instance NoneType is returned rather than 
             # some FileType object.
             pass
-
-    # if os.path.exists(fa_connectome.file):
-    #     out_con_fa = os.path.join(args.out_dir, os.path.basename(fa_connectome.file))
-    #     copy(fa_connectome.file,out_con_fa)
-
-    # if os.path.exists(md_connectome.file):
-    #     out_con_md = os.path.join(args.out_dir, os.path.basename(md_connectome.file))
-    #     copy(md_connectome.file,out_con_md)
-
-    # if os.path.exists(ad_connectome.file):
-    #     out_con_ad = os.path.join(args.out_dir, os.path.basename(ad_connectome.file))
-    #     copy(ad_connectome.file,out_con_ad)
-
-    # if os.path.exists(rd_connectome.file):
-    #     out_con_rd = os.path.join(args.out_dir, os.path.basename(rd_connectome.file))
-    #     copy(rd_connectome.file,out_con_rd)
-
-    # try:
-    #     if os.path.exists(unfilt_tcks.file):
-    #         out_unfilt = os.path.join(args.out_dir, os.path.basename(unfilt_tcks.file))
-    #         copy(unfilt_tcks,out_unfilt)
-    # except AttributeError:
-    #     # AttributeError occurs in the case no filtering ocurred.
-    #     # In this instance NoneType is returned rather than 
-    #     # FileType object.
-    #     pass
 
     # Create QC images for label transform
     # 1. Create File objects
