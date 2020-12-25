@@ -2,6 +2,11 @@
 
 Applies linear and non-linear transforms of atlas labels, and performs fiber tract reconstruction.
 
+* External software dependencies:
+  * `FSL` v6.0+
+  * `MRtrix` v3+
+    * Specifically this version found here: [SS3T-beta](https://3tissue.github.io/doc/ss3t-csd.html)
+
 ```
 usage: xfm_tck.py [-h] -d <DWI.nii> -b <DWI.bval> -e <DWI.bvec> -t
                   <template.nii> -tb <template_brain.nii> -l <labels.nii> -o
