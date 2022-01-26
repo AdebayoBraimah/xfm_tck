@@ -175,6 +175,12 @@ def main() -> None:
                             default=False,
                             required=False,
                             help="Rename output track (.tck) files so that they can be opened in QIT [default: False].")
+    pipeoptions.add_argument('--bias-correct',
+                            action="store_true",
+                            dest="bias_correct",
+                            default=False,
+                            required=False,
+                            help="Perform N4 bias correction prior to creating image mask [default: False].")
 
     # Tractography specific arguments
     tractoptions = parser.add_argument_group('Tractography specific arguments')
@@ -306,7 +312,8 @@ def main() -> None:
                                              md=args.md,
                                              ad=args.ad,
                                              rd=args.rd,
-                                             cleanup=cleanup)
+                                             cleanup=cleanup,
+                                             bias_correct=args.bias_correct)
 
     # Copy files to output directories
     out_con = os.path.join(args.out_dir, os.path.basename(connectome.file))
@@ -362,6 +369,27 @@ class MRtrixError(Exception):
 
 class FSLError(Exception):
     pass
+
+# Functions
+def bias_corr(infile: str, 
+              outdir: str,
+              log: LogFile = None
+             ) ->Tuple[str,str] :
+    '''Perform N4 bias field correction.
+    '''
+    # Compute RGB tissue (signal contribution) maps
+    bc: str = os.path.join(scripts_dir,"bias_corr.sh")
+    bias = Command(bc)
+    bias.cmd_list.append("--input")
+    bias.cmd_list.append(infile)
+    bias.cmd_list.append("--outdir")
+    bias.cmd_list.append(outdir)
+    bias.run(log)
+
+    restore: str = os.path.join(outdir,"restore.nii.gz")
+    bias_field: str = os.path.join(outdir, "bias.nii.gz")
+
+    return restore, bias_field
 
 # Classes
 class ReconMRtrix (object):
@@ -739,7 +767,8 @@ class ReconMRtrix (object):
                     mif: Mif,
                     frac_int: float = 0.5,
                     gzip: bool = False,
-                    cleanup: bool = True
+                    cleanup: bool = True,
+                    bias_correct: bool = False
                    ) -> Tuple[Mif,Mif,Mif]:
         '''Creates an image file mask for an input DWI MIF file.
 
@@ -759,6 +788,7 @@ class ReconMRtrix (object):
             frac_int: Fractional intensity threshold. Smaller values give larger brain outline estimates.
             gzip: Gzip output file.
             cleanup: Perform cleanup.
+            bias_correct: Perform N4 bias correction prior to creating image mask.
 
         Returns:
             mask_mif: Binary mask image MIF file object.
@@ -810,6 +840,10 @@ class ReconMRtrix (object):
         merge_b0s.cmd_list.append("-Tmean")
         merge_b0s.cmd_list.append(tmp_b0.file)
         merge_b0s.run(self.log)
+
+        # Bias correct image
+        if bias_correct:
+            tmp_b0.file, _ = bias_corr(infile=tmp_b0.file, outdir=work_dir.tmp_dir)
         
         # Create brain mask
         bet = Command("bet")
@@ -885,6 +919,7 @@ class ReconMRtrix (object):
             gm_res: GM response function.
             csf_res: CSF response function.
             gzip: Gzip output file.
+            bias_correct: Perform N4 bias correction prior to creating image mask.
 
         Returns:
             wm_fod: WM FOD (fiber orientation-distrubtion) MIF file object.
@@ -1436,7 +1471,8 @@ class DWIxfm(object):
         self.log: LogFile = LogFile(self.log)
             
     def mask_dwi(self,
-                frac_int: float = 0.5
+                frac_int: float = 0.5,
+                bias_correct: bool = False
                 ) -> Tuple[NiiFile,NiiFile,NiiFile]:
         '''Creates an image file mask for an input DWI NIFTI-2 file object.
 
@@ -1453,6 +1489,7 @@ class DWIxfm(object):
 
         Args:
             frac_int: Fractional intensity threshold. Smaller values give larger brain outline estimates.
+            bias_correct: Perform N4 bias correction prior to creating image mask.
 
         Returns:
             mask: Binary mask image NIFTI-2 file object.
@@ -1477,7 +1514,9 @@ class DWIxfm(object):
         
         mif_file = dwi.dwi_nifti_to_mif()
         
-        [mask_mif,brain_mif,head_mif] = dwi.create_mask(mif_file,frac_int)
+        [mask_mif,brain_mif,head_mif] = dwi.create_mask(mif=mif_file,
+                                                        frac_int=frac_int,
+                                                        bias_correct=bias_correct)
         
         # Convert NIFTI to MIF
         mr_convert = Command("mrconvert")
@@ -1766,7 +1805,8 @@ def create_structural_connectome(dwi: str,
                                  md: bool = True,
                                  ad: bool = True,
                                  rd: bool = True,
-                                 cleanup: bool = True
+                                 cleanup: bool = True,
+                                 bias_correct: bool = False
                                 ) -> Tuple[File,File,File,File,File,NiiFile,NiiFile,File,File,TmpDir]:
     '''Constructs a structural connectome given a DWI file, and a set of an integer labeled atlas.
 
@@ -1800,6 +1840,7 @@ def create_structural_connectome(dwi: str,
         ad: Perform AD weighting of the structural connectome.
         rd: Perform RD weighting of the structural connectome.
         cleanup: Perform clean-up.
+        bias_correct: Perform N4 bias correction prior to creating image mask.
         
     Returns:
         connectome: Structural connectome file object.
@@ -1883,7 +1924,8 @@ def create_structural_connectome(dwi: str,
     # Perform brain extraction of B0s
     [mask, brain, head] = mr_diff.create_mask(mif=up_dwi_mif,
                                               frac_int=frac_int,
-                                              cleanup=True)
+                                              cleanup=True,
+                                              bias_correct=bias_correct)
     
     # Compute single-shell 3-tissue CSD
     [wm_fod, gm, csf] = mr_diff.ss3t_csd(mif=up_dwi_mif, 
