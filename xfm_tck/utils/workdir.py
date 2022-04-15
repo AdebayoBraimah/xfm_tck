@@ -34,15 +34,10 @@ class WorkDir(IOBaseObj):
         src: Working directory name/path. This directory need not exist at runtime.
         use_cwd: Use current working directory as the parent directory.
     """
-    __slots__ = ( 
-                    "src", 
-                    "parent_dir"
-                )
 
-    def __init__(self, 
-                 src: str,
-                 use_cwd: bool = False
-                ) -> None:
+    __slots__ = ("src", "parent_dir")
+
+    def __init__(self, src: str, use_cwd: bool = False) -> None:
         """Initialization method for the ``WorkDir`` base class.
 
         Usage example:
@@ -73,13 +68,13 @@ class WorkDir(IOBaseObj):
             _cwd: str = os.getcwd()
             self.src: str = os.path.join(_cwd, self.src)
             self.parent_dir: str = os.path.dirname(self.src)
-    
+
     def __enter__(self):
         """Context manager entrance method for ``WorkDir`` class."""
         if not self.exists():
             self.mkdir()
         return super().__enter__()
-    
+
     def mkdir(self) -> None:
         """Makes/creates the working directory.
 
@@ -102,10 +97,8 @@ class WorkDir(IOBaseObj):
             return os.makedirs(self.src)
         else:
             return None
-    
-    def rmdir(self, 
-              rm_parent: bool = False
-             ) -> None:
+
+    def rmdir(self, rm_parent: bool = False) -> None:
         """Removes working directory, and the parent directory if indicated to do so.
 
         This class method is analogous to UNIX's ``rm -rf`` command and option combination.
@@ -132,10 +125,8 @@ class WorkDir(IOBaseObj):
             return shutil.rmtree(self.src, ignore_errors=True)
         else:
             return None
-    
-    def copy(self,
-             dst: str
-            ) -> str:
+
+    def copy(self, dst: str) -> str:
         """Recursively copies a directory to some destination.
 
         Usage example:
@@ -159,7 +150,7 @@ class WorkDir(IOBaseObj):
             String that corresponds to the copied work.
         """
         return super().copy(dst)
-    
+
     def exists(self) -> bool:
         """Tests if a directory exists.
 

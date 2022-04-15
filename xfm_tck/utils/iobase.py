@@ -5,23 +5,11 @@ import os
 import subprocess
 from warnings import warn
 
-from shutil import (
-    copy,
-    copytree,
-    move
-)
+from shutil import copy, copytree, move
 
-from typing import (
-    Any,
-    List, 
-    Tuple,
-    Union
-)
+from typing import Any, List, Tuple, Union
 
-from abc import (
-    ABC,
-    abstractmethod
-)
+from abc import ABC, abstractmethod
 
 
 class IOBaseObj(ABC):
@@ -52,28 +40,27 @@ class IOBaseObj(ABC):
     Arguments:
         src: Input string that represents a file or directory.
     """
-    __slots__ = ( "src" )
-    
-    def __init__(self,
-                 src: str) -> None:
+
+    __slots__ = "src"
+
+    def __init__(self, src: str) -> None:
         """Constructor that initializes ``IOBaseObj`` abstract base class."""
         self.src: str = src
         super(IOBaseObj, self).__init__()
-    
+
     def __enter__(self):
         """Context manager entrance method."""
         return self
-    
+
     def __exit__(self, exc_type, exc_val, traceback):
         """Context manager exit method."""
         return False
-    
+
     def __repr__(self):
         """Representation request method."""
         return f"<{self.__class__.__name__} {self.src}>"
-    
-    def relpath(self, 
-                dst: str) -> str:
+
+    def relpath(self, dst: str) -> str:
         """Returns the relative file path to some destination.
 
         Usage example:
@@ -105,19 +92,14 @@ class IOBaseObj(ABC):
             String that reprents the relative file path of the object from the destination file or directory.
         """
         if os.path.isfile(self.src):
-            return (os.path.join(
-                os.path.relpath(
-                    os.path.dirname(self.abspath()),
-                    os.path.dirname(dst)),
-                    os.path.basename(self.src)))
+            return os.path.join(
+                os.path.relpath(os.path.dirname(self.abspath()), os.path.dirname(dst)),
+                os.path.basename(self.src),
+            )
         else:
-            return os.path.relpath(
-                self.abspath(),
-                os.path.dirname(dst))
+            return os.path.relpath(self.abspath(), os.path.dirname(dst))
 
-    def abspath(self,
-                follow_sym_links: bool = False
-               ) -> Union[str,None]:
+    def abspath(self, follow_sym_links: bool = False) -> Union[str, None]:
         """Returns the absolute file path.
         
         Usage example:
@@ -152,11 +134,8 @@ class IOBaseObj(ABC):
             return os.path.abspath(os.path.realpath(self.src))
         else:
             return os.path.abspath(self.src)
-    
-    def sym_link(self, 
-                 dst: str, 
-                 relative: bool = False
-                ) -> str:
+
+    def sym_link(self, dst: str, relative: bool = False) -> str:
         """Creates a symbolic link with an absolute or relative file path.
 
         NOTE: If a directory is the used as the input object, then the linked destination is returned.
@@ -194,22 +173,24 @@ class IOBaseObj(ABC):
         src: str = self.abspath(follow_sym_links=True)
 
         # Create command list
-        cmd: List[str] = [ "ln", "-s" ]
-        
+        cmd: List[str] = ["ln", "-s"]
+
         if relative and os.path.isdir(dst):
             dst: str = os.path.relpath(dst, src)
         elif relative:
             src: str = self.relpath(dst=dst)
         else:
             src: str = self.abspath(follow_sym_links=True)
-        
+
         if os.path.exists(dst) and os.path.isfile(dst):
-            warn(f"WARNING: Symlinked file of the name {dst} already exists. It is being replaced.")
+            warn(
+                f"WARNING: Symlinked file of the name {dst} already exists. It is being replaced."
+            )
             os.remove(dst)
-            cmd.extend([f"{src}",f"{dst}"])
+            cmd.extend([f"{src}", f"{dst}"])
         else:
-            cmd.extend([f"{src}",f"{dst}"])
-        
+            cmd.extend([f"{src}", f"{dst}"])
+
         # Execute command
         p: subprocess.Popen = subprocess.Popen(cmd)
         _: Tuple[Any] = p.communicate()
@@ -217,9 +198,7 @@ class IOBaseObj(ABC):
         return dst
 
     @abstractmethod
-    def copy(self, 
-             dst: str
-            ) -> str:
+    def copy(self, dst: str) -> str:
         """Copies file or recursively copies a directory to some destination.
 
         Usage example:
@@ -256,7 +235,7 @@ class IOBaseObj(ABC):
             return os.path.abspath(copy(src=src, dst=dst))
         elif os.path.isdir(src):
             return os.path.abspath(copytree(src=src, dst=dst))
-    
+
     def basename(self) -> str:
         """Retrieves file or directory basename.
 
@@ -316,9 +295,8 @@ class IOBaseObj(ABC):
             String that represents the directory name of the file or the parent directory of the directory.
         """
         return os.path.dirname(self.abspath())
-    
-    def move(self, 
-             dst: str) -> str:
+
+    def move(self, dst: str) -> str:
         """Renames/moves a file/directory. 
 
         Usage example:
@@ -354,7 +332,7 @@ class IOBaseObj(ABC):
             return os.path.abspath(move(src=src, dst=dst, copy_function=copy))
         elif os.path.isdir(src):
             return os.path.abspath(move(src=src, dst=dst, copy_function=copytree))
-    
+
     def join(self, *args) -> str:
         """Joins directory or dirname of a file with additional pathname 
         components.

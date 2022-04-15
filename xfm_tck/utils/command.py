@@ -8,13 +8,7 @@ import shutil
 
 from dataclasses import dataclass
 
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union
-)
+from typing import Dict, List, Optional, Tuple, Union
 
 from xfm_tck.utils.fileio import File
 from xfm_tck.utils.logutil import LogFile
@@ -22,6 +16,7 @@ from xfm_tck.utils.logutil import LogFile
 
 class DependencyError(Exception):
     """Exception intended for unment dependencies"""
+
     pass
 
 
@@ -52,9 +47,10 @@ class Command:
         command: Command to be used.
         env: Dictionary of environment variables to add to subshell.
     """
+
     command: str
-    env: Dict[str,str] = None
-    
+    env: Dict[str, str] = None
+
     def check_dependency(self) -> bool:
         """Checks the dependency of some command line executable. Should the 
         dependency not be met, then an exception is raised. Check the 
@@ -75,17 +71,20 @@ class Command:
         _cmd: str = _tmp[0]
 
         if not shutil.which(_cmd):
-            raise DependencyError(f"Command executable not found in system path: {_cmd}")
+            raise DependencyError(
+                f"Command executable not found in system path: {_cmd}"
+            )
         return True
-    
-    def run(self,
-            log: Optional[Union[LogFile,str]] = None,
-            debug: bool = False,
-            dryrun: bool = False,
-            stdout: str = None,
-            shell: bool = False,
-            raise_exc: bool = True
-           ) -> Tuple[int,Union[str,None],Union[str,None]]:
+
+    def run(
+        self,
+        log: Optional[Union[LogFile, str]] = None,
+        debug: bool = False,
+        dryrun: bool = False,
+        stdout: str = None,
+        shell: bool = False,
+        raise_exc: bool = True,
+    ) -> Tuple[int, Union[str, None], Union[str, None]]:
         """Uses python's built-in ``subprocess`` module to execute (run) a command from a command.
         The standard output and error can optionally be written to file.
         
@@ -126,26 +125,28 @@ class Command:
             log.debug(f"Running:\t{self.command}")
         elif log:
             log.info(f"Running:\t{self.command}")
-        
+
         if log and dryrun:
             log.info(f"Performing command as a dry run.")
             return 0, None, None
-        
+
         # Define environment and environmental variables
-        merged_env: Dict[str,str] = os.environ
+        merged_env: Dict[str, str] = os.environ
         if self.env is not None:
             merged_env.update(self.env)
 
-        p: subprocess.Popen = subprocess.Popen(cmd,
-                                               shell=shell,
-                                               env=merged_env,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-        
+        p: subprocess.Popen = subprocess.Popen(
+            cmd,
+            shell=shell,
+            env=merged_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
         # Write output files
-        out,err = p.communicate()
-        out = out.decode('utf-8')
-        err = err.decode('utf-8')
+        out, err = p.communicate()
+        out = out.decode("utf-8")
+        err = err.decode("utf-8")
 
         # Standard output/error files
         if stdout is not None:
@@ -162,9 +163,12 @@ class Command:
             stderr: str = None
 
         if p.returncode != 0:
-            if log: log.error(f"Failed:\t{self.command} with return code {p.returncode}")
-            if raise_exc: raise RuntimeError(f"\nFailed:\t{self.command} with return code {p.returncode}\n")
+            if log:
+                log.error(f"Failed:\t{self.command} with return code {p.returncode}")
+            if raise_exc:
+                raise RuntimeError(
+                    f"\nFailed:\t{self.command} with return code {p.returncode}\n"
+                )
 
-        return (p.returncode,
-                stdout,
-                stderr)
+        return (p.returncode, stdout, stderr)
+

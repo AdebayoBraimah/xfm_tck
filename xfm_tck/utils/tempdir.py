@@ -35,11 +35,8 @@ class TmpDir(WorkDir):
         src: Temporary parent directory name/path.
         use_cwd: Use current working directory as working direcory.
     """
-    
-    def __init__(self,
-                 src: str,
-                 use_cwd: bool = False
-                ) -> None:
+
+    def __init__(self, src: str, use_cwd: bool = False) -> None:
         """Initialization method for the TmpDir child class.
         
         Usage example:
@@ -59,19 +56,18 @@ class TmpDir(WorkDir):
             use_cwd: Use current working directory as working direcory.
         """
         _n: int = 10000
-        self.src: str = os.path.join(src,'tmp_dir_' + 
-                                     str(random.randint(0,_n)))
-        
+        self.src: str = os.path.join(src, "tmp_dir_" + str(random.randint(0, _n)))
+
         if use_cwd:
             _cwd: str = os.getcwd()
             self.src = os.path.join(_cwd, self.src)
         super(TmpDir, self).__init__(self.src, use_cwd)
-    
+
     def __exit__(self, exc_type, exc_val, traceback):
         """Context manager exit method for ``TmpDir`` class."""
         self.rmdir()
         return super().__exit__(exc_type, exc_val, traceback)
-    
+
     class TmpFile(File):
         """Sub-class of ``TmpDir`` class, which creates and manipulates temporary files via inheritance from the ``File`` object base class.
         
@@ -94,11 +90,9 @@ class TmpDir(WorkDir):
             ext: Temporary directory file extension.
         """
 
-        def __init__(self,
-                     tmp_dir: str,
-                     tmp_file: Optional[str] = "",
-                     ext: Optional[str] = "",
-                    ) -> None:
+        def __init__(
+            self, tmp_dir: str, tmp_file: Optional[str] = "", ext: Optional[str] = "",
+        ) -> None:
             """Initialization method for the TmpFile sub-class that inherits from the ``File`` base class, allowing for the creation and maninuplation of temporary files.
             
             Usage example:
@@ -118,11 +112,11 @@ class TmpDir(WorkDir):
             if tmp_file:
                 pass
             else:
-                _n: int = 10000 
-                tmp_file: str = "tmp_file_" + str(random.randint(0,_n))
-            
+                _n: int = 10000
+                tmp_file: str = "tmp_file_" + str(random.randint(0, _n))
+
             if ext:
-                if '.' in ext:
+                if "." in ext:
                     pass
                 else:
                     ext: str = f".{ext}"
