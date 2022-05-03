@@ -4,3 +4,4 @@ sub*/*
 .vscode/*
 DTK_Test/sub-*/*
 .DS_Store
+DTK_Test/test_dtk/*
