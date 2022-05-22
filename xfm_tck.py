@@ -14,11 +14,6 @@ version 0.0.1
 Adebayo B. Braimah - 25 Dec. 2020
 """
 
-# TODO: neonatal ACT:
-#   * https://community.mrtrix.org/t/5ttgen-and-infants-data/2197/5
-#   * https://git.ecdf.ed.ac.uk/jbrl/neonatal-5TT
-#   * https://community.mrtrix.org/t/neonatal-brain-structural-connectome/5236
-
 # Import modules/packages
 import os
 import platform
@@ -822,7 +817,7 @@ class ReconMRtrix(object):
                 upsample.cmd_list.append("-interp")
                 upsample.cmd_list.append(interp)
             upsample.run(self.log)
-            return upsampled_mif
+            # return upsampled_mif
         except DependencyError:
             upsample = Command("mrresize")
             upsample.check_dependency()
@@ -834,7 +829,17 @@ class ReconMRtrix(object):
                 upsample.cmd_list.append("-interp")
                 upsample.cmd_list.append(interp)
             upsample.run(self.log)
-            return upsampled_mif
+            # return upsampled_mif
+
+        if interp.lower() == "nearest":
+            conv = Command("mrconvert")
+            conv.cmd_list.append("-force")
+            conv.cmd_list.append("-datatype")
+            conv.cmd_list.append("int32")
+            conv.cmd_list.append(f"{upsampled_mif.file}")
+            conv.cmd_list.append(f"{upsampled_mif.file}")
+
+        return upsampled_mif
 
     def create_mask(
         self,
@@ -1776,6 +1781,13 @@ class DWIxfm(object):
             warp.cmd_list.append("--abs")
 
         warp.run(self.log)
+
+        # conv = Command("fslmaths")
+        # conv.cmd_list.append(f"{out.file}")
+        # conv.cmd_list.append(f"{out.file}")
+        # conv.cmd_list.append("-odt")
+        # conv.cmd_list.append("int")
+        # conv.run(self.log)
 
         return out
 
