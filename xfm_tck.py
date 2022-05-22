@@ -838,6 +838,7 @@ class ReconMRtrix(object):
             conv.cmd_list.append("int32")
             conv.cmd_list.append(f"{upsampled_mif.file}")
             conv.cmd_list.append(f"{upsampled_mif.file}")
+            conv.run(self.log)
 
         return upsampled_mif
 
